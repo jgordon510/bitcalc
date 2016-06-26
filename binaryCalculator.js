@@ -38,7 +38,7 @@ States.LoadFonts.prototype = {
 
 
             game.state.start('Calculator');
-
+ 
         }
     },
 
