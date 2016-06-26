@@ -428,15 +428,25 @@ function divideBinaries(dividend, divisor) {
 function multiplyBinaries(factor1, factor2) {
     //console.log(binaryToDecimal(factor1))
     //console.log(binaryToDecimal(factor2))
-    var factor1Copy = factor1.slice(0, factor1.length);
-    var factor2Copy = factor2.slice(0, factor2.length);
+    var factor1Copy
+    var factor2Copy
+    if(factor1.length < factor2.length)
+    {
+        factor1Copy = factor1.slice(0, factor1.length);
+        factor2Copy = factor2.slice(0, factor2.length); 
+    } else
+    {
+        factor1Copy = factor2.slice(0, factor2.length);
+        factor2Copy = factor1.slice(0, factor1.length); 
+    }
+
     var answer = [0];
     var cycleLimit = 200000;
     while (factor1Copy.indexOf(1) > -1 && cycleLimit > 0) {
         cycleLimit--
         factor1Copy = subtractBinaries(factor1Copy, [1]);
         //console.log(answer, factor2)
-        answer = addBinaries(answer, factor2)
+        answer = addBinaries(answer, factor2Copy)
             //console.log(binaryToDecimal(answer))
     }
 
