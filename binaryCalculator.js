@@ -38,7 +38,7 @@ States.LoadFonts.prototype = {
 
 
             game.state.start('Calculator');
- 
+
         }
     },
 
@@ -97,7 +97,7 @@ function Calculator() {
         font: 'bold Anonymous Pro',
         fill: '#FFFFFF',
         align: 'right',
-        fontSize: 10 
+        fontSize: 10
     };
     this.displayStyle = {
         font: 'bold Anonymous Pro',
@@ -107,10 +107,10 @@ function Calculator() {
     };
 
     this.displayPanelValue = game.add.text(this.displayPanel.right - 5, this.displayPanel.y, 'XXXXXXXXXXXXXXXXXXXX', this.displayStyle)
-    //this.displayPanelValue.setShadow(-5, 0, 'rgba(0,0,0,0.5)', 5);
+        //this.displayPanelValue.setShadow(-5, 0, 'rgba(0,0,0,0.5)', 5);
     game.calculatorSettings.displayPanelValue = this.displayPanelValue
     this.displayPanelValue.anchor.setTo(1, 0.45)
-    //this.displayPanelValue.padding.set(0, 0);
+        //this.displayPanelValue.padding.set(0, 0);
     this.displayPanelValue.centerY = this.displayPanel.centerY
     while (this.displayPanelValue.width < this.displayPanel.width * 0.95 && this.displayPanelValue.height < this.displayPanel.height) {
         this.displayPanelValue.fontSize++
@@ -120,8 +120,13 @@ function Calculator() {
         if (newValue == null) {
             newValue = [0]
         }
+     
         game.calculatorSettings.displayedValue = newValue;
         game.calculatorSettings.displayPanelValue.setText(game.calculatorSettings.displayedValue.join(''))
+        if(game.calculatorSettings.displayPanelValue.width > this.displayPanel.width)
+        {
+           game.calculatorSettings.displayPanelValue.setText('ERR') 
+        }
     }
 
 
@@ -156,6 +161,15 @@ function Calculator() {
     }
     //input callback
     function numberButtonClick(button) {
+        if (game.calculatorSettings.lastButtonPressed.type == "operator") {
+            var remainderIndex = game.calculatorSettings.storedValue.indexOf("R")
+            if (remainderIndex > -1) {
+                game.calculatorSettings.storedValue.splice(remainderIndex, game.calculatorSettings.storedValue.length - remainderIndex)
+            }
+
+            //clear the display and game.calculatorSettings.displayedValue
+            game.calculator.setPanel([0])
+        }
         if (game.calculatorSettings.displayedValue.length < 20) {
             if (game.calculatorSettings.lastButtonPressed.type == 'equal') {
                 game.calculator.setPanel([0])
@@ -222,20 +236,15 @@ function Calculator() {
     //add the input callback
     function operatorButtonClick(button) {
         game.calculatorSettings.lastButtonPressed = button;
-        //set game.calculatorSettings.chosenOperator to +-*/
+        button.type = "operator"
+            //set game.calculatorSettings.chosenOperator to +-*/
         game.calculatorSettings.chosenOperator = button.operator
             //if there's a game.calculatorSettings.storedValue
 
         //set game.calculatorSettings.storedValue to game.calculatorSettings.displayedValue
         game.calculatorSettings.storedValue = game.calculatorSettings.displayedValue;
         //get rid of the remainder part if there is one
-        var remainderIndex = game.calculatorSettings.storedValue.indexOf("R")
-        if (remainderIndex > -1) {
-            game.calculatorSettings.storedValue.splice(remainderIndex, game.calculatorSettings.storedValue.length - remainderIndex)
-        }
 
-        //clear the display and game.calculatorSettings.displayedValue
-        game.calculator.setPanel([0])
     }
 
 
@@ -430,14 +439,13 @@ function multiplyBinaries(factor1, factor2) {
     //console.log(binaryToDecimal(factor2))
     var factor1Copy
     var factor2Copy
-    if(factor1.length < factor2.length)
-    {
+    if (factor1.length < factor2.length) {
         factor1Copy = factor1.slice(0, factor1.length);
-        factor2Copy = factor2.slice(0, factor2.length); 
-    } else
-    {
+        factor2Copy = factor2.slice(0, factor2.length);
+    }
+    else {
         factor1Copy = factor2.slice(0, factor2.length);
-        factor2Copy = factor1.slice(0, factor1.length); 
+        factor2Copy = factor1.slice(0, factor1.length);
     }
 
     var answer = [0];
@@ -665,4 +673,3 @@ $(document).unbind('keydown').bind('keydown', function(event) {
         event.preventDefault();
     }
 });
-
