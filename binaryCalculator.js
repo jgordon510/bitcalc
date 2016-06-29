@@ -59,7 +59,7 @@ States.Calculator.prototype = {
     create: function() {
         game.calculatorSettings = {
             lastButtonPressed: {},
-            displayedValue: [0],
+            displayedValue: [false],
             storedValue: null,
             chosenOperator: null
         };
@@ -118,14 +118,23 @@ function Calculator() {
 
     this.setPanel = function(newValue) {
         if (newValue == null) {
-            newValue = [0]
+            newValue = [false]
         }
-     
         game.calculatorSettings.displayedValue = newValue;
-        game.calculatorSettings.displayPanelValue.setText(game.calculatorSettings.displayedValue.join(''))
-        if(game.calculatorSettings.displayPanelValue.width > this.displayPanel.width)
-        {
-           game.calculatorSettings.displayPanelValue.setText('ERR') 
+        
+        var displayText = ""
+        game.calculatorSettings.displayedValue.forEach(function(digit){
+            if(digit == "R")
+            {
+                displayText+=("R")
+            }else
+            {
+                displayText+=(+digit)
+            }
+        })
+        game.calculatorSettings.displayPanelValue.setText(displayText)
+        if (game.calculatorSettings.displayPanelValue.width > this.displayPanel.width) {
+            game.calculatorSettings.displayPanelValue.setText('ERR')
         }
     }
 
@@ -150,7 +159,7 @@ function Calculator() {
         this.numberButtons[i].inputEnabled = true;
         this.numberButtons[i].input.useHandCursor = true;
         this.numberButtons[i].events.onInputDown.add(numberButtonClick)
-        this.numberButtons[i].value = i;
+        this.numberButtons[i].value = (i==1);
         var label = game.add.text(buttonWidth / 2, buttonHeight / 2, i.toString(), this.style)
         this.numberButtons[i].addChild(label)
         label.anchor.setTo(0.5, 0.5)
@@ -168,11 +177,11 @@ function Calculator() {
             }
 
             //clear the display and game.calculatorSettings.displayedValue
-            game.calculator.setPanel([0])
+            game.calculator.setPanel([false])
         }
         if (game.calculatorSettings.displayedValue.length < 20) {
             if (game.calculatorSettings.lastButtonPressed.type == 'equal') {
-                game.calculator.setPanel([0])
+                game.calculator.setPanel([false])
             }
             //set game.calculator.lastButtonPressed to me (for CL/CE button)
             game.calculatorSettings.lastButtonPressed = button;
@@ -180,10 +189,11 @@ function Calculator() {
             var newValue = game.calculatorSettings.displayedValue;
 
             //must either be a 1 or the display value should have a 1 somehwere
-            if (button.value == 1 || game.calculatorSettings.displayedValue.indexOf(1) > -1) {
+            if (button.value || game.calculatorSettings.displayedValue.indexOf(true) > -1) {
                 //replace the first 0, or push it onto the stack
-                if (game.calculatorSettings.displayedValue == 0) {
-                    newValue = [1]
+                if (game.calculatorSettings.displayedValue[0] == false && game.calculatorSettings.displayedValue.length ==1) {
+                    console.log("initial")
+                    newValue = [true]
                 }
                 else {
                     newValue.push(button.value)
@@ -384,40 +394,51 @@ function BackgroundSprite(width, height, color) {
     return returnSprite;
 }
 
+//done (maybe address regrouping of remainders?)
 function divideBinaries(dividend, divisor) {
     console.log("dividend: ", binaryToDecimal(dividend))
     console.log("divisor: ", binaryToDecimal(divisor))
-    var quotient = [0];
-    while (subtractBinaries(dividend, divisor) != null) {
+    var quotient = [false];
+    var iterations = 0;
+
+    var remainder = [false];
+    while (dividend != null && iterations < 1000) {
         tickBinary(quotient)
+        remainder = dividend;
         dividend = subtractBinaries(dividend, divisor);
+        console.log(binaryToDecimal(dividend))
+        iterations++
     }
 
+    //one too many
+    quotient = subtractBinaries(quotient, [true])
     var object = {
         quotient: quotient,
-        remainder: dividend
+        remainder: remainder
     }
 
-    //remove leading 0's up to the first one
-    for (var i = object.remainder.length - 1; i > -1; i--) {
-        if (object.remainder[i] > 1) {
-            object.remainder[i] -= 2
-            if (i > 0) {
-                object.remainder[i - 1]++
-            }
-            else {
-                object.remainder.push(1)
-            }
-        }
-    }
-    while (-1 < object.remainder.indexOf(0) && object.remainder.indexOf(0) < object.remainder.indexOf(1)) {
-        object.remainder.splice(object.remainder.indexOf(0), 1)
+
+    // for (var i = object.remainder.length - 1; i > -1; i--) {
+    //     if (object.remainder[i] > 1) {
+    //         object.remainder[i] -= 2
+    //         if (i > 0) {
+    //             object.remainder[i - 1]++
+    //         }
+    //         else {
+    //             object.remainder.push(1)
+    //         }
+    //     }
+    // }
+
+    // remove leading 0's up to the first one
+    while (-1 < object.remainder.indexOf(false) && object.remainder.indexOf(false) < object.remainder.indexOf(true)) {
+        object.remainder.splice(object.remainder.indexOf(false), 1)
     }
 
     console.log("QUOTIENT: ", binaryToDecimal(object.quotient))
     console.log("REMAINDER: ", binaryToDecimal(object.remainder))
         //if we're only zeroes, blank it out
-    if (object.remainder.indexOf(1) == -1) {
+    if (object.remainder.indexOf(true) == -1) {
         object.remainder = [];
     }
     else //add an "R"
@@ -439,6 +460,7 @@ function multiplyBinaries(factor1, factor2) {
     //console.log(binaryToDecimal(factor2))
     var factor1Copy
     var factor2Copy
+   
     if (factor1.length < factor2.length) {
         factor1Copy = factor1.slice(0, factor1.length);
         factor2Copy = factor2.slice(0, factor2.length);
@@ -447,61 +469,66 @@ function multiplyBinaries(factor1, factor2) {
         factor1Copy = factor2.slice(0, factor2.length);
         factor2Copy = factor1.slice(0, factor1.length);
     }
-
-    var answer = [0];
+    console.log(factor1Copy)
+    var answer = [false];
     var cycleLimit = 200000;
-    while (factor1Copy.indexOf(1) > -1 && cycleLimit > 0) {
+    while (factor1Copy.indexOf(true) > -1 && cycleLimit > 0) {
         cycleLimit--
-        factor1Copy = subtractBinaries(factor1Copy, [1]);
-        //console.log(answer, factor2)
+        factor1Copy = subtractBinaries(factor1Copy, [true]);
+        console.log("answer before: " , binaryToDecimal(answer))
         answer = addBinaries(answer, factor2Copy)
-            //console.log(binaryToDecimal(answer))
+        console.log("factor2: " , binaryToDecimal(factor2Copy))
+        console.log("answer after: " , binaryToDecimal(answer))
     }
 
     if (cycleLimit == 0) {
-        answer = [0];
+        answer = [false];
     }
 
     return answer;
 }
 
+//done
 function subtractBinaries(minuend, subtrahend) {
     var difference = [];
     var negative = false;
     //even the number of digits
     if (minuend != null && subtrahend != null) {
         while (minuend.length > subtrahend.length) {
-            subtrahend.unshift(0)
+            subtrahend.unshift(false)
         }
     }
-
-
-
     for (var digit = minuend.length - 1; digit > -1; digit--) {
-        if (minuend[digit] < subtrahend[digit]) {
-            //regroup
-            ////console.log("regrouping before: " , minuend)
+
+        if ((minuend[digit] && subtrahend[digit]) || (!minuend[digit] && !subtrahend[digit])) //1-1 or 0-0
+        {
+            difference[digit] = false;
+        }
+        else if (minuend[digit] && !subtrahend[digit]) //1-0
+        {
+            difference[digit] = true;
+        }
+        else //0-1 regroup
+        {
             var regrouped = false;
+            difference[digit] = true;
             for (var regroupDigit = digit; regroupDigit > -1; regroupDigit--) {
-                if (!regrouped && minuend[regroupDigit] == 1) {
+                if (!regrouped && minuend[regroupDigit] == true) {
                     regrouped = true
-                    minuend[regroupDigit] = 0;
+                    minuend[regroupDigit] = false;
                     for (var distributeDigit = regroupDigit + 1; distributeDigit <= digit; distributeDigit++) {
-                        minuend[distributeDigit]++
-                            if (distributeDigit == digit) {
-                                minuend[distributeDigit]++
-                            }
+                        minuend[distributeDigit] = true
+
+                        // if (distributeDigit == digit) {
+                        //     minuend[distributeDigit]=true;
+                        // }
                     }
                 }
             }
-            ////console.log("regrouping after: " , minuend)
-
+            if (!regrouped) {
+                negative = true;
+            }
         }
-        difference[digit] = minuend[digit] - subtrahend[digit];
-        if (difference[digit] < 0) {
-            negative = true
-        }
-
     }
     if (negative) {
         difference = null;
@@ -509,8 +536,9 @@ function subtractBinaries(minuend, subtrahend) {
     return difference
 }
 
+//done
 function decimalToBinary(decimalNumber) {
-    var binaryNumber = [0]
+    var binaryNumber = [false]
 
     while (decimalNumber > 0) {
         decimalNumber--
@@ -519,70 +547,107 @@ function decimalToBinary(decimalNumber) {
     return binaryNumber
 }
 
-function addBinaries1(addend1, addend2) {
-    var answer = addend2.slice(0, addend2.length);
-    var sum = [0];
-    while (addend1.indexOf(1) > -1) {
-        answer = tickBinary(answer);
-        addend1 = subtractBinaries(addend1, [1])
-    }
-    return answer;
-}
 
 function addBinaries(addend1, addend2) {
     //all arrays the same length
     while (addend1.length < addend2.length) {
-        addend1.unshift(0)
+        addend1.unshift(false)
     }
     while (addend2.length < addend1.length) {
-        addend2.unshift(0)
+        addend2.unshift(false)
     }
-    var answer = [0];
+    var answer = [false];
     while (answer.length < addend1.length) {
-        answer.unshift(0)
+        answer.unshift(false)
     }
-    var regroups = [0];
+    var regroups = [false];
     while (regroups.length < addend1.length) {
-        regroups.unshift(0)
+        regroups.unshift(false)
     }
-
 
 
     for (var digit = addend1.length - 1; digit > -1; digit--) {
-
-        answer[digit] = addend1[digit] + addend2[digit] + regroups[digit]
-
-        if (answer[digit] > 1) {
-            answer[digit] -= 2;
-            if (digit > 0) {
-                regroups[digit - 1] = 1;
+        console.log(binaryToDecimal(answer))
+        if (addend1[digit] && addend2[digit]) //1+1
+        {
+            console.log("1+1")
+            if (regroups[digit]) {
+                answer[digit] = true;
             }
             else {
-                answer.unshift(1)
+                answer[digit] = false;
+            }
+            
+            if (digit > 0) {
+                regroups[digit - 1] = true
+            }
+            else {
+                answer.unshift(true)
             }
 
         }
+        else if ((addend1[digit] && !addend2[digit]) || (!addend1[digit] && addend2[digit])) //1+0;0+1
+        {
+           console.log("1+0/0+1")
+            if (regroups[digit]) {
+                answer[digit] = false;
+                if (digit > 0) {
+                    regroups[digit - 1] = true
+                }
+                else {
+                    answer.unshift(true)
+                }
+
+            }
+            else {
+                answer[digit] = true;
+            }
+        }
+        else if (!addend1[digit] && !addend2[digit]) //0+0
+        {
+           console.log("0+0")
+            if (regroups[digit]) {
+                answer[digit] = true;
+
+            }
+            else {
+                answer[digit] = false;
+            }
+        }
+
+
+        // if (answer[digit] > 1) {
+        //     answer[digit] -= 2;
+        //     if (digit > 0) {
+        //         regroups[digit - 1] = 1;
+        //     }
+        //     else {
+        //         answer.unshift(1)
+        //     }
+
+        // }
     }
 
     return answer;
 
 }
 
+//done
 function tickBinary(binaryNumber) {
     var incremented = false;
     for (var i = binaryNumber.length - 1; i > -1; i--) {
-        if (binaryNumber[i] == 0 && incremented == false) {
-            binaryNumber[i]++
-                for (var j = i + 1; j < binaryNumber.length; j++) {
-                    binaryNumber[j] = 0;
-                }
+        if (binaryNumber[i] == false && incremented == false) {
+            binaryNumber[i] = true
+            for (var j = i + 1; j < binaryNumber.length; j++) {
+                binaryNumber[j] = false;
+            }
             incremented = true
         }
     }
     if (!incremented) {
-        binaryNumber.push(0)
+        binaryNumber.push(false)
         for (var i = 1; i < binaryNumber.length; i++) {
-            binaryNumber[i] = 0;
+            binaryNumber[i] = false;
         }
     }
     return binaryNumber
@@ -593,7 +658,7 @@ function binaryToDecimal(binaryNumber) {
     var decimalNumber = 0;
 
     if (binaryNumber == null) {
-        binaryNumber = [0]
+        binaryNumber = [false]
     }
     for (var i = binaryNumber.length - 1; i > -1; i--) {
         decimalNumber += binaryNumber[i] * digitValue;
